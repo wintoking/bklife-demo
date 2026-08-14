@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>背壳锁 BK life · 智能门锁演示</title>
+<style>
+:root{
+  --navy:#1A2246; --navy2:#2A3563; --purple:#26003B; --ink:#14161F;
+  --orange:#FF9902; --orange2:#FFB84D; --bg:#F6F5F7; --card:#FFFFFF;
+  --line:#EFEFF2; --muted:#A2A5B0; --muted2:#C9C9C9; --green:#22C55E; --red:#E5484D;
+  --r:22px; --r-sm:14px; --shadow:0 10px 30px rgba(26,34,70,.08);
+  --tab-h:64px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif;
+  background:#0B0D14; color:var(--ink); display:flex; justify-content:center;
+  -webkit-font-smoothing:antialiased;
+}
+#app{width:100%;max-width:430px;height:100vh;height:100dvh;position:relative;overflow:hidden;background:var(--bg)}
+/* ---------- status bar ---------- */
+.statusbar{
+  height:44px;padding:0 20px;display:flex;align-items:flex-end;justify-content:space-between;
+  padding-bottom:8px;color:var(--ink);background:transparent;position:absolute;top:0;left:0;right:0;z-index:60;
+  font-size:15px;font-weight:600;transition:color .3s;
+}
+.statusbar .sb-right{display:flex;align-items:center;gap:6px}
+.statusbar svg{display:block}
+.statusbar.navy{color:#fff}
+/* ---------- screen ---------- */
+#screen{position:absolute;top:0;left:0;right:0;bottom:0;inset:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+#screen::-webkit-scrollbar{display:none}
+.screen{min-height:100%;padding-bottom:calc(var(--tab-h) + 28px)}
+.screen.no-tab{padding-bottom:40px}
+/* ---------- tab bar ---------- */
+#tabbar{
+  position:absolute;left:0;right:0;bottom:0;height:calc(var(--tab-h) + env(safe-area-inset-bottom,0px));
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  background:rgba(255,255,255,.96);backdrop-filter:blur(14px);
+  border-top:1px solid var(--line);display:flex;align-items:stretch;z-index:50;
+}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#B4B7C2;cursor:pointer;position:relative;transition:color .2s}
+.tab .t-ic{width:24px;height:24px;display:flex;align-items:center;justify-content:center}
+.tab .t-lb{font-size:10px;letter-spacing:.5px}
+.tab.on{color:var(--navy)}
+.tab.on .t-lb{font-weight:700}
+.tab-center{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;top:-16px;
+}
+.tab-center .bk-dot{
+  width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--navy) 0%,var(--purple) 100%);
+  display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:15px;letter-spacing:.5px;
+  box-shadow:0 10px 22px rgba(38,0,59,.35);border:3px solid #fff;
+}
+.tab-center .t-lb{font-size:10px;color:var(--navy);font-weight:700;margin-top:2px;letter-spacing:.5px}
+/* ---------- generic UI ---------- */
+.page-head{
+  position:relative;padding:50px 20px 16px;display:flex;align-items:center;justify-content:center;background:var(--bg);
+}
+.page-head .back{position:absolute;left:16px;top:48px;width:34px;height:34px;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 12px rgba(26,34,70,.08)}
+.page-head h1{font-size:18px;font-weight:700;color:var(--navy)}
+.page-head .right{position:absolute;right:16px;top:48px}
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:16px}
+.card + .card{margin-top:14px}
+.sect{margin:18px 18px 0}
+.sect-title{font-size:13px;color:var(--muted);margin:0 6px 10px;font-weight:600;letter-spacing:.5px}
+.row{display:flex;align-items:center;gap:12px;padding:14px 4px;cursor:pointer;position:relative}
+.row + .row{border-top:1px solid var(--line)}
+.row .r-ic{width:40px;height:40px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex:none}
+.row .r-tx{flex:1;min-width:0}
+.row .r-t{font-size:16px;font-weight:600;color:var(--ink)}
+.row .r-s{font-size:12px;color:var(--muted);margin-top:2px}
+.row .r-v{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.row .chev{color:#C6C8D0}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;font-size:10.5px;font-weight:600}
+.badge.navy{background:var(--navy);color:#fff}
+.badge.outline{background:transparent;border:1px solid rgba(255,255,255,.55);color:#fff}
+.badge.orange{background:rgba(255,153,2,.12);color:#D97E00}
+.badge.gray{background:#F0F1F4;color:var(--muted)}
+.badge.red{background:rgba(229,72,77,.1);color:var(--red)}
+.num-xl{font-size:52px;font-weight:800;line-height:1;color:var(--navy);font-family:"DIN Alternate","Helvetica Neue",sans-serif}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;border:none;cursor:pointer;font-weight:700;font-size:16px;border-radius:16px;padding:14px;transition:transform .12s,opacity .2s;font-family:inherit}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:linear-gradient(135deg,var(--navy),var(--purple));color:#fff;box-shadow:0 8px 20px rgba(26,34,70,.25)}
+.btn-orange{background:linear-gradient(135deg,var(--orange),#FF7A00);color:#fff;box-shadow:0 8px 20px rgba(255,153,2,.3)}
+.btn-ghost{background:#fff;color:var(--navy);border:1px solid #E3E4EA}
+.btn.block{width:100%}
+.input{
+  width:100%;border:1.5px solid #E7E8EE;background:#FBFBFC;border-radius:14px;padding:13px 14px;font-size:15px;font-family:inherit;color:var(--ink);outline:none;transition:border .2s;
+}
+.input:focus{border-color:var(--navy);background:#fff}
+.label{font-size:13px;color:var(--muted);margin:14px 4px 7px;font-weight:600}
+/* toggles */
+.switch{width:48px;height:29px;border-radius:999px;background:#E4E5EA;position:relative;cursor:pointer;transition:background .2s;flex:none}
+.switch::after{content:"";position:absolute;width:23px;height:23px;border-radius:50%;background:#fff;top:3px;left:3px;box-shadow:0 2px 6px rgba(0,0,0,.18);transition:left .2s}
+.switch.on{background:linear-gradient(135deg,var(--navy),var(--purple))}
+.switch.on::after{left:22px}
+/* toast */
+#toast{
+  position:absolute;left:50%;top:46%;transform:translate(-50%,-50%) scale(.9);z-index:99;
+  background:rgba(20,22,31,.92);color:#fff;padding:14px 22px;border-radius:14px;font-size:14px;font-weight:600;
+  opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;text-align:center;max-width:78%;
+}
+#toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+/* modal */
+#modal{
+  position:absolute;top:0;left:0;right:0;bottom:0;inset:0;z-index:90;display:none;background:rgba(11,13,20,.5);
+  align-items:flex-end;justify-content:center;
+}
+#modal.show{display:flex}
+.sheet{width:100%;max-width:430px;background:#fff;border-radius:26px 26px 0 0;padding:10px 20px calc(28px + env(safe-area-inset-bottom,0px));animation:up .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes up{from{transform:translateY(40px);opacity:.6}to{transform:none;opacity:1}}
+.sheet .grab{width:38px;height:4.5px;border-radius:3px;background:#E3E4EA;margin:6px auto 14px}
+.sheet h3{font-size:17px;font-weight:700;color:var(--ink);text-align:center}
+.sheet .close-x{position:absolute;right:20px;margin-top:-30px;width:30px;height:30px;border-radius:50%;background:#F1F2F5;display:flex;align-items:center;justify-content:center;color:var(--muted);cursor:pointer}
+/* pill segmented */
+.pills{display:flex;background:#F0F1F4;border-radius:12px;padding:4px;gap:4px}
+.pill{flex:1;text-align:center;padding:9px 0;font-size:13px;font-weight:600;color:var(--muted);border-radius:9px;cursor:pointer;transition:all .2s}
+.pill.on{background:#fff;color:var(--navy);box-shadow:0 2px 8px rgba(26,34,70,.1)}
+/* empty state */
+.empty{padding:60px 20px;text-align:center;color:var(--muted)}
+.empty .e-ic{font-size:44px;margin-bottom:10px}
+</style>
+<style id="extra">
+/* ---------- home ---------- */
+.home-hero{background:linear-gradient(150deg,#1A2246 0%,#26003B 62%,#3A0A5E 100%);padding:52px 20px 118px;color:#fff;position:relative}
+.hh-top{display:flex;justify-content:space-between;align-items:flex-start}
+.hh-name{font-size:22px;font-weight:800;display:flex;align-items:center;gap:10px}
+.hh-loc{display:flex;align-items:center;gap:5px;margin-top:7px;font-size:13px;color:rgba(255,255,255,.72)}
+.hh-acts{display:flex;gap:10px}
+.hh-acts .ic-btn{width:38px;height:38px;border-radius:13px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative}
+.hh-acts .ic-btn .dot{position:absolute;top:8px;right:9px;width:8px;height:8px;border-radius:50%;background:var(--orange)}
+.lockcard{margin:24px 4px 0;background:linear-gradient(135deg,rgba(255,255,255,.16),rgba(255,255,255,.05));border:1px solid rgba(255,255,255,.22);border-radius:26px;padding:26px 24px;backdrop-filter:blur(8px);position:relative;overflow:hidden}
+.lockcard::after{content:"";position:absolute;right:-60px;top:-60px;width:190px;height:190px;border-radius:50%;background:radial-gradient(circle,rgba(255,153,2,.4),transparent 70%)}
+.lc-pct{font-size:64px;font-weight:800;line-height:1;letter-spacing:-1px;font-family:"DIN Alternate","Helvetica Neue",sans-serif}
+.lc-lbl{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:13.5px;color:rgba(255,255,255,.8)}
+.lc-lbl .bolt{width:7px;height:12px;border-radius:2px;background:var(--orange);display:inline-block}
+.lc-cta{display:flex;gap:12px;margin-top:24px}
+.lc-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:13px 0;border-radius:15px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);font-size:14.5px;font-weight:700;cursor:pointer;transition:transform .12s}
+.lc-btn:active{transform:scale(.96)}
+.lc-btn.lite{background:#fff;color:var(--navy);border:none}
+.home-body{position:relative;margin-top:-86px;padding:0 16px 20px}
+.cloud-foot{display:flex;align-items:center;justify-content:space-between;padding:14px 4px}
+.cloud-foot .cf-l{font-size:12.5px;color:var(--muted)}
+.cloud-foot .cf-r{font-size:14px;font-weight:800;color:var(--navy)}
+.quick{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.quick .q{background:#fff;border-radius:20px;box-shadow:var(--shadow);padding:16px;cursor:pointer}
+.quick .q .q-ic{width:40px;height:40px;border-radius:13px;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+.quick .q .q-t{font-size:14.5px;font-weight:700;color:var(--ink)}
+.quick .q .q-s{font-size:11.5px;color:var(--muted);margin-top:3px}
+/* avatar chip */
+.avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#2A3563,#26003B);color:#fff;font-size:11.5px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+.chip{display:flex;align-items:center;gap:7px}
+/* cat-eye */
+.cam-wrap{position:relative;height:calc(100vh - 44px);height:calc(100dvh - 44px);background:linear-gradient(180deg,#B9C6D4 0%,#8FA3B8 45%,#5E7389 100%);overflow:hidden}
+.cam-noise{position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.05) 0 2px,transparent 2px 4px)}
+.cam-top{position:absolute;top:56px;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:0 18px;color:#fff;z-index:5}
+.cam-rec{display:flex;align-items:center;gap:7px;background:rgba(0,0,0,.35);padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:600}
+.cam-rec .red{width:8px;height:8px;border-radius:50%;background:#FF3B30;animation:blink 1.2s infinite}
+@keyframes blink{50%{opacity:.25}}
+.cam-batt{background:rgba(0,0,0,.35);padding:6px 12px;border-radius:999px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px}
+.cam-cta{position:absolute;left:0;right:0;bottom:calc(var(--tab-h) + 26px);display:flex;justify-content:center;gap:14px;z-index:5;padding:0 16px}
+.cam-btn{width:58px;height:58px;border-radius:20px;background:rgba(0,0,0,.42);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.25);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:10.5px;font-weight:600;cursor:pointer;transition:transform .12s}
+.cam-btn:active{transform:scale(.92)}
+.cam-btn.unlock{background:linear-gradient(135deg,#FF9902,#FF7A00);border:none;font-size:12px;font-weight:800}
+.cam-btn.off{opacity:.5}
+/* share key */
+.share-hero{background:linear-gradient(150deg,#1A2246,#26003B 70%);padding:64px 24px 44px;color:#fff;text-align:center;position:relative;overflow:hidden}
+.share-hero::after{content:"";position:absolute;left:50%;top:-70px;transform:translateX(-50%);width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(255,153,2,.35),transparent 68%)}
+.av-pair{display:flex;align-items:center;justify-content:center;gap:14px;position:relative;z-index:2}
+.av-big{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#FF9902,#FF7A00);color:#fff;font-size:22px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 28px rgba(0,0,0,.3)}
+.av-mid{display:flex;flex-direction:column;align-items:center;gap:4px;color:rgba(255,255,255,.65);font-size:12px}
+.av-line{width:44px;height:2px;background:rgba(255,255,255,.35)}
+.av-nm{color:#fff;font-weight:700}
+.key-card{margin:-26px 18px 0;background:#fff;border-radius:24px;box-shadow:0 18px 44px rgba(26,34,70,.18);padding:22px;position:relative;z-index:3}
+.key-type{display:flex;gap:8px;margin:14px 0}
+.kt{flex:1;text-align:center;padding:11px 0;border-radius:12px;background:#F3F4F7;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer}
+.kt.on{background:linear-gradient(135deg,var(--navy),var(--purple));color:#fff}
+.time-row{display:flex;align-items:center;gap:8px;background:#F6F5F7;border-radius:14px;padding:13px 14px;margin-top:12px;font-size:13px;color:var(--ink)}
+.time-row .tv{font-weight:700;font-variant-numeric:tabular-nums}
+/* mall */
+.mall-hero{background:linear-gradient(160deg,#0B1019,#1B2333 70%);padding:52px 20px 20px;color:#fff}
+.mall-tabs{display:flex;gap:22px;margin-top:16px;font-size:14px;font-weight:600;color:rgba(255,255,255,.45)}
+.mall-tabs .on{color:#fff;position:relative}
+.mall-tabs .on::after{content:"";position:absolute;left:0;right:0;bottom:-8px;height:3px;border-radius:2px;background:var(--orange)}
+.mall-banner{margin:16px 16px 0;border-radius:22px;background:linear-gradient(135deg,#7A1FA5,#26003B 55%,#0B1019);padding:22px;color:#fff;position:relative;overflow:hidden;box-shadow:0 14px 34px rgba(0,0,0,.25)}
+.mall-banner .mb-k{font-size:12px;letter-spacing:2px;color:rgba(255,255,255,.6)}
+.mall-banner .mb-t{font-size:30px;font-weight:800;margin-top:6px}
+.mall-banner .mb-s{font-size:13px;color:var(--orange2);margin-top:6px}
+.prod-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px}
+.prod{background:#fff;border-radius:20px;overflow:hidden;box-shadow:var(--shadow);cursor:pointer}
+.prod .p-img{height:120px;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#E9EAF2,#F6F5F7);color:var(--navy)}
+.prod .p-bd{padding:12px 14px 14px}
+.prod .p-t{font-size:13px;font-weight:600;line-height:1.4;height:2.8em;overflow:hidden}
+.prod .p-p{display:flex;align-items:baseline;gap:6px;margin-top:8px}
+.prod .p-now{color:var(--orange);font-weight:800;font-size:17px}
+.prod .p-old{color:var(--muted2);font-size:12px;text-decoration:line-through}
+/* discover */
+.disc-head{display:flex;align-items:center;gap:22px;padding:56px 20px 0;background:#fff}
+.disc-head span{font-size:16px;font-weight:600;color:var(--muted2);cursor:pointer;position:relative}
+.disc-head span.on{color:var(--ink)}
+.disc-head span.on::after{content:"";position:absolute;left:50%;transform:translateX(-50%);bottom:-10px;width:20px;height:3.5px;border-radius:2px;background:var(--navy)}
+.disc-head .more{margin-left:auto;color:var(--muted2);font-size:13px}
+.tag-scroll{display:flex;gap:10px;padding:18px 16px 4px;overflow-x:auto;scrollbar-width:none}
+.tag-scroll::-webkit-scrollbar{display:none}
+.tag{flex:none;padding:8px 15px;border-radius:999px;background:#fff;border:1px solid var(--line);font-size:13px;font-weight:600;color:var(--ink);cursor:pointer}
+.tag.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.post{background:#fff;border-radius:22px;margin:14px 16px 0;box-shadow:var(--shadow);overflow:hidden}
+.post .p-top{display:flex;align-items:center;gap:10px;padding:14px 16px}
+.post .p-name{font-weight:700;font-size:14.5px}
+.post .p-time{font-size:11.5px;color:var(--muted);margin-top:2px}
+.post .p-follow{margin-left:auto;padding:7px 16px;border-radius:999px;background:var(--navy);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer}
+.post .p-img2{height:150px;background:linear-gradient(135deg,#E8E3F5,#B9A8E0 60%,#8E7CC3);position:relative;overflow:hidden}
+.post .p-tx{padding:14px 16px;font-size:13.5px;line-height:1.7;color:var(--ink)}
+.post .p-meta{display:flex;gap:18px;padding:0 16px 14px;color:var(--muted);font-size:12.5px}
+/* bklife explore */
+.bl-hero{background:linear-gradient(160deg,#4D4239,#574A41 60%,#2E2823);min-height:calc(100vh - 44px);min-height:calc(100dvh - 44px);color:#F6F5F7;position:relative;display:flex;flex-direction:column;padding:60px 24px 0;overflow:hidden}
+.bl-art{position:absolute;inset:0;opacity:.9}
+.bl-title{margin-top:44px;font-size:38px;font-weight:800;line-height:1.3;position:relative;z-index:2;text-shadow:0 6px 24px rgba(0,0,0,.4)}
+.bl-sub{margin-top:10px;font-size:14px;color:rgba(246,245,247,.72);position:relative;z-index:2}
+.bl-btns{position:relative;z-index:2;display:flex;gap:12px;margin-top:30px}
+.bl-btns .bb{flex:1;padding:14px 0;border-radius:16px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);color:#F6F5F7;font-size:15px;font-weight:700;text-align:center;cursor:pointer}
+.bl-btns .bb.solid{background:#F6F5F7;color:#3A332C;border:none}
+.bl-footer{position:absolute;left:0;right:0;bottom:calc(var(--tab-h) + 16px);z-index:5;display:flex;justify-content:space-between;align-items:center;padding:0 24px;color:rgba(246,245,247,.85)}
+.bl-swatch{display:flex;gap:10px;align-items:center}
+.bl-swatch .sw{width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,.55)}
+/* profile */
+.prof-head{background:linear-gradient(160deg,#F3F1F7,#F6F5F7);padding:52px 20px 16px}
+.prof-card{background:#fff;border-radius:24px;box-shadow:var(--shadow);padding:20px;display:flex;align-items:center;gap:14px}
+.prof-av{width:62px;height:62px;border-radius:50%;background:linear-gradient(135deg,#2A3563,#26003B);color:#fff;font-size:22px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
+.prof-nm{font-size:20px;font-weight:800;color:var(--navy)}
+.member-card{margin:14px 16px 0;background:linear-gradient(135deg,#1A2246,#26003B 70%);border-radius:22px;padding:18px 20px;color:#fff;display:flex;justify-content:space-between;align-items:center;position:relative;overflow:hidden}
+.member-card::after{content:"";position:absolute;right:-30px;bottom:-40px;width:140px;height:140px;border-radius:50%;background:radial-gradient(circle,rgba(255,153,2,.4),transparent 70%)}
+.mc-num{font-size:26px;font-weight:800;font-family:"DIN Alternate",sans-serif}
+.mc-lbl{font-size:11.5px;color:rgba(255,255,255,.65);margin-top:2px}
+.mc-tag{display:flex;gap:8px;position:relative;z-index:2}
+/* recharge grid */
+.rg-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px}
+.rg{background:#fff;border-radius:20px;padding:18px 16px;box-shadow:var(--shadow);cursor:pointer}
+.rg .rg-ic{width:42px;height:42px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+.rg .rg-t{font-size:14.5px;font-weight:700}
+.rg .rg-s{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.5}
+/* package cards */
+.pk{border:2px solid var(--line);border-radius:20px;padding:16px;cursor:pointer;transition:border .2s}
+.pk.on{border-color:var(--navy);background:rgba(26,34,70,.04)}
+.pk .pk-n{font-size:15px;font-weight:700}
+.pk .pk-p{font-size:22px;font-weight:800;color:var(--orange);margin-top:6px}
+.pk .pk-s{font-size:11.5px;color:var(--muted);margin-top:4px}
+/* unlock animation */
+@keyframes unlockFlash{0%{box-shadow:0 0 0 0 rgba(34,197,94,.6)}100%{box-shadow:0 0 0 40px rgba(34,197,94,0)}}
+.unlocking{animation:unlockFlash 1s 2}
+</style>
+</head>
+<body>
+<noscript><div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#F6F5F7;color:#1A2246;font-size:15px;text-align:center;padding:30px;z-index:999">此演示需要启用 JavaScript，请用 Chrome / Edge 打开</div></noscript>
+<div id="app">
+  <div class="statusbar" id="statusbar">
+    <span>9:41</span>
+    <span class="sb-right">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><path d="M8.5 2.2c2.2 0 4.2.9 5.7 2.3l1-1C13.4 1.7 11.1.7 8.5.7S3.6 1.7 1.8 3.5l1 1C4.3 3.1 6.3 2.2 8.5 2.2zm0 3.3c1.3 0 2.5.5 3.4 1.4l1-1C11.9 4.9 10.3 4.1 8.5 4.1s-3.4.8-4.4 1.8l1 1c.9-.9 2.1-1.4 3.4-1.4zm0 3.2c-.9 0-1.7.7-1.7 1.7s.8 1.7 1.7 1.7 1.7-.7 1.7-1.7-.8-1.7-1.7-1.7z"/></svg>
+      <svg width="24" height="12" viewBox="0 0 24 12" fill="none"><rect x=".5" y=".5" width="20" height="11" rx="3" stroke="currentColor" opacity=".45"/><rect x="2" y="2" width="14" height="8" rx="1.6" fill="currentColor"/><path d="M23 4v4c-1 0-1.6-.8-1.6-2S22 4 23 4z" fill="currentColor" opacity=".45"/></svg>
+    </span>
+  </div>
+  <main id="screen"></main>
+  <nav id="tabbar">
+    <div class="tab" data-tab="home" onclick="go('home')">
+      <span class="t-ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9.5 21v-6h5v6"/></svg></span>
+      <span class="t-lb">首页</span>
+    </div>
+    <div class="tab" data-tab="mall" onclick="go('mall')">
+      <span class="t-ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16l-1.3 12.2a1.6 1.6 0 0 1-1.6 1.4H6.9a1.6 1.6 0 0 1-1.6-1.4L4 8z"/><path d="M8.5 10V6.5a3.5 3.5 0 0 1 7 0V10"/></svg></span>
+      <span class="t-lb">商城</span>
+    </div>
+    <div class="tab-center" onclick="go('bklife')">
+      <span class="bk-dot">BK</span>
+      <span class="t-lb">BK life</span>
+    </div>
+    <div class="tab" data-tab="discover" onclick="go('discover')">
+      <span class="t-ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg></span>
+      <span class="t-lb">发现</span>
+    </div>
+    <div class="tab" data-tab="profile" onclick="go('profile')">
+      <span class="t-ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c1.4-3.6 4.2-5.2 7.5-5.2s6.1 1.6 7.5 5.2"/></svg></span>
+      <span class="t-lb">我的</span>
+    </div>
+  </nav>
+  <div id="toast"></div>
+  <div id="modal"></div>
+</div>
+<script>
+"use strict";
+/* ================= helpers ================= */
+const $ = (s, el=document) => el.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let _toastTimer = null;
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(_toastTimer); _toastTimer = setTimeout(()=>t.classList.remove('show'), 1800);
+}
+function openSheet(html){
+  const m = $('#modal'); m.innerHTML = `<div class="sheet">${html}</div>`;
+  m.classList.add('show');
+}
+function closeSheet(){ $('#modal').classList.remove('show'); }
+/* ================= data ================= */
+const ME = {name:'Salim DG', role:'主管理员', phone:'135****3313', home:'新塘智慧园'};
+const state = {
+  battery:70, batteryLow:false, autolock:true, silent:false,
+  pwdList:[
+    {n:'日常开锁密码', type:'开锁', val:'•••• 08', t:'永久'},
+    {n:'临时访客密码', type:'访客', val:'•••• 26', t:'2025-10-20 前有效'},
+    {n:'报警密码', type:'胁迫', val:'•••• 99', t:'紧急联系人已绑定'}
+  ],
+  faceList:[{n:'Salim DG', role:'管理员'},{n:'妈妈', role:'普通用户'}],
+  palmList:[{n:'KC', role:'普通用户'},{n:'爸爸', role:'普通用户'}],
+  cardList:[{n:'KUN', role:'用户卡'},{n:'备用卡', role:'用户卡'}],
+  keys:[{n:'我的永久钥匙', to:'我', type:'永久'},{n:'分享给 KC', to:'KC', type:'临时', t:'10-17 02:01 到期'},{n:'一次性钥匙', to:'访客', type:'一次性'}],
+  users:{admins:[{n:'小美', phone:'138****2211', p:'2'},{n:'阿强', phone:'137****8802', p:'1'}], users:[{n:'访客-李', phone:'136****0098'}], fams:[{n:'妈妈', p:'管理'},{n:'爸爸', p:'管理'},{n:'女儿', p:'普通'}]},
+  events:[
+    {t:'2025-10-20 08:12:03', u:'Salim DG', e:'手机钥匙开锁', s:'door'},
+    {t:'2025-10-20 07:55:18', u:'妈妈', e:'人脸识别开门', s:'face'},
+    {t:'2025-10-19 22:41:02', u:'访客-李', e:'密码开锁（访客）', s:'pwd'},
+    {t:'2025-10-19 19:05:47', u:'系统', e:'防撬报警已触发', s:'warn'},
+    {t:'2025-10-19 12:30:00', u:'Salim DG', e:'远程开锁（猫眼）', s:'door'}
+  ],
+  vids:[
+    {t:'2025-10-20 11:11:11', e:'门外有人逗留', d:'00:32', v:true},
+    {t:'2025-10-20 08:12:03', e:'开门录像', d:'00:15', v:true},
+    {t:'2025-10-19 22:41:02', e:'密码开锁', d:'00:12', v:false},
+    {t:'2025-10-19 19:05:47', e:'防撬报警', d:'00:45', v:false}
+  ],
+  msgs:{urgent:[{t:'防撬报警', s:'10-19 19:05', d:'检测到撬锁行为，已推送至主管理员'},{t:'胁迫开锁', s:'10-18 21:30', d:'报警密码已使用，紧急联系人已通知'}], sys:[{t:'固件升级完成', s:'10-15 10:00', d:'门锁固件已升级至 v3.2.0.4'},{t:'云存储到期提醒', s:'10-01 09:00', d:'年套餐剩余 203 天'}], open:[{t:'手机钥匙开锁', s:'10-20 08:12', d:'Salim DG 已开门'},{t:'人脸识别开门', s:'10-20 07:55', d:'妈妈 已开门'}]}
+};
+/* ================= icons ================= */
+const I = {
+  lock:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="5" y="10" width="14" height="10" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15" r="1.4" fill="currentColor"/></svg>',
+  key:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4.2"/><path d="m11.2 11.8 8-8M16.5 6.5l2.4 2.4M14 9l2 2"/></svg>',
+  face:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="9" r="4"/><path d="M4.8 20c1.2-3.2 3.9-4.8 7.2-4.8s6 1.6 7.2 4.8"/></svg>',
+  palm:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11.5V5a1.6 1.6 0 0 1 3.2 0v6M12.2 10V4a1.6 1.6 0 0 1 3.2 0v6.2M15.4 10.8V6a1.6 1.6 0 0 1 3.2 0v6.4c0 4.3-2.6 7.6-6.6 7.6-3 0-5.4-1.7-6.6-4.4L3.5 12a1.8 1.8 0 0 1 3-1.8L9 13"/></svg>',
+  card:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2.6"/><path d="M3 10h18M7 15h4"/></svg>',
+  cloud:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A5.5 5.5 0 0 1 17 9.4 3.8 3.8 0 0 1 17 18H7z"/></svg>',
+  video:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="13" height="14" rx="2.6"/><path d="m16 10 5-3v10l-5-3"/></svg>',
+  eye:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+  share:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="2.6"/><circle cx="17.5" cy="6" r="2.6"/><circle cx="17.5" cy="18" r="2.6"/><path d="m8.4 10.8 6.7-3.6M8.4 13.2l6.7 3.6"/></svg>',
+  bell:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6"/><path d="M10 19a2.2 2.2 0 0 0 4 0"/></svg>',
+  home:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9.5 21v-6h5v6"/></svg>',
+  pin:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.1-7-11a7 7 0 0 1 14 0c0 4.9-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>',
+  gear:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-2-1.2L14.2 3h-4l-.4 2.7a7 7 0 0 0-2 1.2l-2.3-1-2 3.4 2 1.5A7 7 0 0 0 5.5 12a7 7 0 0 0 .1 1.2l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 2 1.2l.4 2.7h4l.4-2.7a7 7 0 0 0 2-1.2l2.3 1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/></svg>',
+  chev:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>',
+  chevb:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg>',
+  plus:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  pwd:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15" r="1.6" fill="currentColor"/><path d="M12 15v2.5"/></svg>',
+  users:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.4"/><path d="M2.8 20c1.2-3 3.6-4.4 6.2-4.4s5 1.4 6.2 4.4"/><circle cx="17" cy="9" r="2.6"/><path d="M16.5 15.8c2.2.3 3.9 1.5 4.8 3.7"/></svg>',
+  doc:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></svg>',
+  trash:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2M6.5 7l1 13h9l1-13M10 11v6M14 11v6"/></svg>',
+  wifi:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 9a15 15 0 0 1 19 0M5.5 12.5a10 10 0 0 1 13 0M8.7 16a5 5 0 0 1 6.6 0"/><circle cx="12" cy="19.2" r="1.3" fill="currentColor"/></svg>',
+  mic:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/></svg>',
+  cam:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h10v10H4zM14 10.5l5-2.5v8l-5-2.5"/></svg>',
+  flash:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg>',
+  link:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.5 1.5"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.5-1.5"/></svg>',
+  wallet:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2.6"/><path d="M3 10h18M16 14.5h2"/></svg>',
+  msg:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.3 7.6L4 21l1.5-4.4A8.5 8.5 0 1 1 21 12z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01"/></svg>',
+  broom:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m13 3 8 8-2.5 2.5L10.5 5.5zM7 11l6 6-3 3-6-6zM4 20c2-.4 4-.6 6-1"/></svg>',
+  shield:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5c0 4.6 2.9 8 7 10 4.1-2 7-5.4 7-10V6z"/><path d="m9 12 2 2 4-4.5"/></svg>',
+  cart:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.6"/><circle cx="17" cy="20" r="1.6"/><path d="M3 4h2l2.5 11.5h10L20 8H6"/></svg>'
+};
+const DOOR = '<span class="badge navy" style="font-size:9.5px;letter-spacing:.5px">DOOR</span>';
+function row(ic, icBg, t, s, v, cb){
+  return `<div class="row" onclick="${cb||''}">
+    <span class="r-ic" style="background:${icBg}">${ic}</span>
+    <span class="r-tx"><span class="r-t">${t}</span>${s?`<div class="r-s">${s}</div>`:''}</span>
+    ${v?`<span class="r-v">${v}</span>`:''}
+    <span class="chev">${I.chev}</span></div>`;
+}
+function head(title, right){
+  return `<div class="page-head"><span class="back" onclick="back()">${I.chevb}</span><h1>${title}</h1>${right?`<span class="right">${right}</span>`:''}</div>`;
+}
+/* ================= screens ================= */
+const S = {};
+function setStatus(navy){ $('#statusbar').classList.toggle('navy', !!navy); }
+function showTab(show){ $('#tabbar').style.display = show ? 'flex' : 'none'; }
+
+/* ---------- 登录 / 注册 / 找回密码 ---------- */
+S.login = {tab:false, render(){
+  setStatus(true);
+  return `<div class="screen no-tab" style="background:linear-gradient(165deg,#1A2246 0%,#26003B 78%,#3A0A5E 100%)">
+    <div style="padding:96px 28px 30px;color:#fff">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="width:56px;height:56px;border-radius:18px;background:linear-gradient(135deg,#FF9902,#FF7A00);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;color:#fff;box-shadow:0 12px 26px rgba(255,153,2,.35)">BK</div>
+        <div><div style="font-size:22px;font-weight:800">背壳锁 BK life</div><div style="font-size:12.5px;color:rgba(255,255,255,.62);margin-top:3px">智能门锁 · 智慧生活</div></div>
+      </div>
+      <div style="margin-top:52px;font-size:27px;font-weight:800;line-height:1.35">欢迎使用背壳智能<br><span style="color:var(--orange2)">一锁开启</span>智慧新生活</div>
+      <div style="margin-top:10px;font-size:13.5px;color:rgba(255,255,255,.55)">人脸 · 掌纹 · 密码 · 钥匙 · 猫眼，全场景守护</div>
+    </div>
+    <div style="background:var(--bg);border-radius:30px 30px 0 0;padding:26px 24px calc(36px + env(safe-area-inset-bottom,0px));margin-top:8px">
+      <div class="pills" style="margin-bottom:20px">
+        <div class="pill on" id="lgp1" onclick="lgMode(1)">验证码登录</div>
+        <div class="pill" id="lgp2" onclick="lgMode(2)">密码登录</div>
+      </div>
+      <div class="label" style="margin-top:0">手机号</div>
+      <input class="input" value="135 8888 3313" readonly>
+      <div id="lg-pwd-block" style="display:none">
+        <div class="label">登录密码</div>
+        <input class="input" type="password" value="demo1234" readonly>
+      </div>
+      <div id="lg-code-block">
+        <div class="label">短信验证码</div>
+        <div style="display:flex;gap:10px"><input class="input" value="123456" readonly style="flex:1"><div class="btn btn-ghost" style="padding:0 18px;font-size:13px;flex:none" onclick="toast('验证码已发送，3 分钟内有效')">获取验证码</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin:18px 2px 20px">
+        <span class="switch on" onclick="this.classList.toggle('on');toast(this.classList.contains('on')?'已同意《服务协议》和《隐私政策》':'请先阅读并同意协议')"></span>
+        <span style="font-size:12px;color:var(--muted)">已阅读并同意 <span style="color:var(--navy)">《服务协议》</span>和<span style="color:var(--navy)">《隐私政策》</span></span>
+      </div>
+      <button class="btn btn-primary block" onclick="go('home')">登 录</button>
+      <div style="display:flex;justify-content:space-between;margin-top:18px;font-size:13.5px">
+        <span style="color:var(--navy);font-weight:600" onclick="go('register')">注册账号</span>
+        <span style="color:var(--navy);font-weight:600" onclick="go('forgot')">忘记密码</span>
+        <span style="color:var(--muted)" onclick="toast('人脸 / 指纹登录（演示）')">人脸/指纹登录</span>
+      </div>
+      <div style="text-align:center;margin-top:30px;font-size:11.5px;color:var(--muted2)">演示模式 · 点击“登录”直接进入首页</div>
+    </div>
+  </div>`;
+}};
+function lgMode(m){
+  $('#lgp1').classList.toggle('on', m===1); $('#lgp2').classList.toggle('on', m===2);
+  $('#lg-code-block').style.display = m===1 ? 'block' : 'none';
+  $('#lg-pwd-block').style.display = m===2 ? 'block' : 'none';
+}
+S.register = {tab:false, render(){
+  setStatus(false);
+  return `<div class="screen no-tab">
+    ${head('注册账号')}
+    <div style="padding:10px 24px">
+      <div class="label">手机号码</div><input class="input" placeholder="请输入手机号">
+      <div class="label">短信验证码</div>
+      <div style="display:flex;gap:10px"><input class="input" placeholder="验证码"><div class="btn btn-ghost" style="padding:0 18px;font-size:13px;flex:none" onclick="toast('验证码已发送')">获取验证码</div></div>
+      <div class="label">设置登录密码</div><input class="input" type="password" placeholder="6~12 位，不能全数字或字母">
+      <div class="label">确认密码</div><input class="input" type="password" placeholder="再次输入密码">
+      <div style="display:flex;align-items:center;gap:8px;margin:20px 2px"><span class="switch on"></span><span style="font-size:12px;color:var(--muted)">同意背壳智能《服务协议》和《隐私政策》</span></div>
+      <button class="btn btn-primary block" onclick="toast('注册成功，已自动登录');go('home')">同意协议并注册</button>
+    </div></div>`;
+}};
+S.forgot = {tab:false, render(){
+  setStatus(false);
+  return `<div class="screen no-tab">
+    ${head('找回密码')}
+    <div style="padding:10px 24px">
+      <div class="label">手机号码</div><input class="input" placeholder="请输入注册手机号">
+      <div class="label">短信验证码</div>
+      <div style="display:flex;gap:10px"><input class="input" placeholder="验证码"><div class="btn btn-ghost" style="padding:0 18px;font-size:13px;flex:none" onclick="toast('验证码已发送')">获取验证码</div></div>
+      <div class="label">新密码</div><input class="input" type="password" placeholder="6~12 位">
+      <button class="btn btn-primary block" style="margin-top:26px" onclick="toast('密码已重置');go('login')">确认更改</button>
+    </div></div>`;
+}};
+
+/* ---------- 首页 ---------- */
+S.home = {tab:true, render(){
+  setStatus(true);
+  return `<div class="screen">
+    <div class="home-hero">
+      <div class="hh-top">
+        <div>
+          <div class="hh-name">${esc(ME.name)} <span class="badge outline">主管理员</span></div>
+          <div class="hh-loc">${I.pin} ${esc(ME.home)} · 主卧门锁</div>
+        </div>
+        <div class="hh-acts">
+          <span class="ic-btn" onclick="go('messages')">${I.bell}<span class="dot"></span></span>
+          <span class="ic-btn" onclick="go('family')">${I.home}</span>
+        </div>
+      </div>
+      <div class="lockcard">
+        <div class="lc-pct">${state.battery}%</div>
+        <div class="lc-lbl"><span class="bolt"></span>门锁电量 · 正常待机</div>
+        <div class="lc-cta">
+          <div class="lc-btn" onclick="go('cateye')">${I.eye} 实时猫眼</div>
+          <div class="lc-btn lite" onclick="go('sharekey')">${I.share} 分享钥匙</div>
+        </div>
+      </div>
+    </div>
+    <div class="home-body">
+      <div class="sect" style="margin-top:0">
+        <div class="sect-title">开门权限</div>
+        <div class="card">
+          ${row(I.pwd,'rgba(26,34,70,.08)', '密码设置', '开锁 · 访客 · 胁迫', `<span class="num-xl" style="font-size:30px">3</span>`, "go('pwdlist')")}
+          ${row(I.face,'rgba(255,153,2,.14)', '人脸管理', '3D 人脸识别', `<span class="chip"><span class="avatar">S</span>${DOOR}</span>`, "go('facelist')")}
+          ${row(I.palm,'rgba(38,0,59,.10)', '掌纹管理', '近红外掌纹', `<span class="chip"><span class="avatar">K</span>${DOOR}</span>`, "go('palmlist')")}
+          ${row(I.card,'rgba(34,197,94,.12)', '门卡管理', 'M1 专属卡', `<span class="chip"><span class="avatar">K</span>${DOOR}</span>`, "go('cardlist')")}
+        </div>
+      </div>
+      <div class="sect">
+        <div class="sect-title">云服务</div>
+        <div class="card">
+          ${row(I.cloud,'rgba(42,53,99,.1)', '云储存', '事件抓拍 · 循环覆盖', `<b style="color:var(--navy);font-size:16px">7天</b>`, "go('cloudstore')")}
+          ${row(I.video,'rgba(229,72,77,.1)', '云录像', '录像回看 · 下载', `<b style="color:var(--navy);font-size:16px">9个</b>`, "go('cloudvideo')")}
+          <div class="cloud-foot">
+            <span class="cf-l">年套餐剩余：<b style="color:var(--orange)">203</b> 天</span>
+            <span class="cf-r" onclick="go('cloudstore')">立即续费 →</span>
+          </div>
+        </div>
+      </div>
+      <div class="quick">
+        <div class="q" onclick="go('device')"><span class="q-ic" style="background:rgba(26,34,70,.08)">${I.lock}</span><div class="q-t">我的设备</div><div class="q-s">1 把门锁 · 电量 70%</div></div>
+        <div class="q" onclick="go('keys')"><span class="q-ic" style="background:rgba(255,153,2,.14)">${I.key}</span><div class="q-t">我的钥匙</div><div class="q-s">3 把 · 1 把待分享</div></div>
+        <div class="q" onclick="go('events')"><span class="q-ic" style="background:rgba(34,197,94,.12)">${I.doc}</span><div class="q-t">事件记录</div><div class="q-s">今日 3 条</div></div>
+        <div class="q" onclick="go('messages')"><span class="q-ic" style="background:rgba(229,72,77,.1)">${I.bell}</span><div class="q-t">消息中心</div><div class="q-s">2 条紧急通知</div></div>
+      </div>
+    </div>
+  </div>`;
+}};
+
+/* ---------- 我的设备 / 门锁详情 ---------- */
+S.device = {tab:false, render(){
+  setStatus(false);
+  return `<div class="screen no-tab">
+    ${head('我的设备', `<span class="btn btn-ghost" style="padding:8px 14px;font-size:12.5px" onclick="go('addlock')">＋ 添加</span>`)}
+    <div style="padding:6px 16px">
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:14px">
+          <span style="width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,#1A2246,#26003B);color:#fff;display:flex;align-items:center;justify-content:center">${I.lock}</span>
+          <div style="flex:1"><div style="font-size:16.5px;font-weight:700">背壳锁 F3 Pro</div><div style="font-size:12.5px;color:var(--muted);margin-top:3px">BD-5F37 · 主卧 · 已连接</div></div>
+          <span class="badge" style="background:rgba(34,197,94,.12);color:var(--green)">在线</span>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:16px">
+          <div style="flex:1;background:#F6F5F7;border-radius:14px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--navy)">70%</div><div style="font-size:11px;color:var(--muted);margin-top:3px">门锁电量</div></div>
+          <div style="flex:1;background:#F6F5F7;border-radius:14px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--navy)">5</div><div style="font-size:11px;color:var(--muted);margin-top:3px">开门权限</div></div>
+          <div style="flex:1;background:#F6F5F7;border-radius:14px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--navy)">203</div><div style="font-size:11px;color:var(--muted);margin-top:3px">云套餐/天</div></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        ${row(I.key,'rgba(255,153,2,.14)','开锁管理','手机钥匙 · 密码 · 门卡 · 指纹',null,"go('openmgr')")}
+        ${row(I.users,'rgba(26,34,70,.08)','用户管理','子管理员 2 · 普通用户 1 · 家庭成员 4',null,"go('users')")}
+        ${row(I.doc,'rgba(34,197,94,.12)','事件记录','云端 + 门锁本地记录',null,"go('events')")}
+        ${row(I.eye,'rgba(38,0,59,.1)','猫眼管理','实时监控 · 雷达监测',null,"go('catmgr')")}
+        ${row(I.video,'rgba(229,72,77,.1)','云录像','9 个录像',null,"go('cloudvideo')")}
+        ${row(I.gear,'rgba(42,53,99,.1)','门锁设置','信息 · 同步 · 基础 · 安全',null,"go('locksettings')")}
+      </div>
+    </div></div>`;
+}};
+
+S.openmgr = {tab:false, render(){
+  setStatus(false);
+  return `<div class="screen no-tab">
+    ${head('开锁管理')}
+    <div style="padding:6px 16px">
+      <div class="card">
+        ${row(I.key,'rgba(255,153,2,.14)','手机钥匙','3 把 · 靠近自动开锁',null,"go('keys')")}
+        ${row(I.pwd,'rgba(26,34,70,.08)','密码','3 组 · 含访客/胁迫',null,"go('pwdlist')")}
+        ${row(I.card,'rgba(34,197,94,.12)','门卡','2 张 · M1 专属卡',null,"go('cardlist')")}
+        ${row(I.face,'rgba(38,0,59,.1)','人脸','2 个 · 3D 识别',null,"go('facelist')")}
+        ${row(I.palm,'rgba(42,53,99,.1)','掌纹','2 个 · 近红外',null,"go('palmlist')")}
+      </div>
+      <button class="btn btn-primary block" style="margin-top:18px" onclick="toast('靠近门锁并打开蓝牙，已开始添加凭证')">＋ 添加开锁凭证</button>
+    </div></div>`;
+}};
+
+/* ---------- 门锁设置 ---------- */
+S.locksettings = {tab:false, render(){
+  setStatus(false);
+  return `<div class="screen no-tab">
+    ${head('门锁设置')}
+    <div style="padding:6px 16px">
+      <div class="card">
+        ${row(I.lock,'rgba(26,34,70,.08)','门锁信息','名称 · 位置',null,"toast('门锁名称：背壳锁 F3 Pro（点击修改）')")}
+        ${row(I.link,'rgba(42,53,99,.1)','同步设置','同步权限 · 电量 · 时间',null,"go('sync')")}
+        ${row(I.gear,'rgba(255,153,2,.14)','基础设置','音量 · 工作模式 · 专属卡',null,"go('base')")}
+        ${row(I.shield,'rgba(34,197,94,.12)','安全设置','童锁 · 布防 · 报警 · 安全模式',null,"go('security')")}
+        ${row(I.video,'rgba(229,72,77,.1)','固件升级','当前 v3.2.0.4',null,"toast('已是最新版本 v3.2.0.4')")}
+        ${row(I.trash,'rgba(229,72,77,.12)','删除门锁','需短信验证码确认',null,"go('dellock')")}
+      </div>
+    </div></div>`;
+}};
+
+S.sync = {tab:false, render(){
+  setStatus(false);
+  return `<div class="screen no-tab">
+    ${head('同步设置')}
+    <div style="padding:6px 16px">
+      <div class="card">
+        ${row(I.link,'rgba(42,53,99,.1)','同步权限','同步指纹/密码/门卡/人脸/掌静脉',null,"toast('权限同步完成，共 5 类凭证已汇总')")}
+        ${row(I.shield,'rgba(34,197,94,.12)','同步电量','同步门锁电量信息',null,"toast('电量已同步：70%')")}
+        ${row(I.doc,'rgba(255,153,2,.14)','校准时间','同步门锁内部时钟',null,"toast('时间校准完成')")}
+        ${row(I.gear,'rgba(26,34,70,.08)','同步门锁设置','同步本地设置信息',null,"toast('设置信息已同步')")}
+      </div>
+    </div></div>`;
+}};
+
+S.dellock = {tab:false, render(){
+  setStatus(false);
+  return `<div class="screen no-tab">
+    ${head('删除门锁')}
+    <div style="padding:6px 16px">
+      <div class="card" style="border:1.5px solid rgba(229,72,77,.3)">
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <span style="width:42px;height:42px;border-radius:14px;background:rgba(229,72,77,.1);color:var(--red);display:flex;align-items:center;justify-content:center;flex:none">${I.trash}</span>
+          <div style="font-size:13.5px;color:var(--muted);line-height:1.7">删除后需重新添加门锁。<br>输入手机短信验证码完成确认：</div>
+        </div>
+        <div class="label">短信验证码</div>
+        <div style="display:flex;gap:10px"><input class="input" value="123456" readonly style="flex:1"><div class="btn btn-ghost" style="padding:0 16px;font-size:13px;flex:none" onclick="toast('验证码已发送')">获取验证码</div></div>
+        <button class="btn block" style="margin-top:18px;background:var(--red);color:#fff" onclick="toast('门锁已删除');go('home')">确认删除</button>
+      </div>
+    </div></div>`;
+}};
+function toggleRow(ic, icBg, t, s, key, extra){
+  const on = state[key];
+  return `<div class="row"><span class="r-ic" style="background:${icBg}">${ic}</span>
+    <span class="r-tx"><span class="r-t">${t}</span>${s?`<div class="r-s">${s}</div>`:''}</span>
+    ${extra||''}<span class="switch ${on?'on':''}" onclick="tgl('${key}',this)"></span></div>`;
+}
+function tgl(key, el){
+  state[key] = !state[key]; el.classList.toggle('on', state[key]);
+  toast(state[key] ? '已开启' : '已关闭');
+}
+
+S.security = {tab:false, render(){
+  setStatus(false);
+  return `<div class="screen no-tab">
+    ${head('安全设置')}
+    <div style="padding:6px 16px">
+      <div class="card">${toggleRow(I.shield,'rgba(34,197,94,.12)','童锁','开启后不能通过后面板开门','autolock')}</div>
+      <div class="card">${toggleRow(I.shield,'rgba(34,197,94,.12)','门锁布防','门内开锁时录像并推送报警记录','guard')}</div>
+      <div class="card">${toggleRow(I.lock,'rgba(26,34,70,.08)','电子反锁','反锁状态非管理员无法开锁','rekey')}</div>
+      <div class="card">${toggleRow(I.bell,'rgba(255,153,2,.14)','斜舌报警','门未关好时报警','latch')}</div>
+      <div class="card">${toggleRow(I.bell,'rgba(229,72,77,.1)','非法报警','5 次非法开锁触发报警','illegal')}</div>
+      <div class="card">${toggleRow(I.shield,'rgba(38,0,59,.1)','防撬报警','撬锁时报警并推送主管理员','pry')}</div>
+      <div class="card">${toggleRow(I.face,'rgba(42,53,99,.1)','人脸识别','允许人脸方式开门','facelock')}</div>
+      <div class="card">${row(I.face,'rgba(42,53,99,.1)','人脸识别触发方式','自动 / 手动',`<b style="font-size:13px;color:var(--navy)">自动</b>`,"go('facetrigger')")}</div>
+      <div class="card">${toggleRow(I.eye,'rgba(34,197,94,.12)','人脸识别防回头','设置时间内无法二次识别','noreturn')}</div>
+      <div class="card">${toggleRow(I.shield,'rgba(26,34,70,.12)','安全模式','双重验证 · 仅主管理员可操作','safemode')}</div>
+      <div class="card">${row(I.eye,'rgba(38,0,59,.1)','雷达监测','徘徊监测 · 距离 · 间隔',`<b style="font-size:13px;color:var(--navy)">远 · 中</b>`,"go('radar')")}</div>
+      <div class="card">${row(I.video,'rgba(255,153,2,.14)','情景模式','省电 120s · 普通 60s · 实时 10s',`<b style="font-size:13px;color:var(--navy)">普通</b>`,"go('scene')")}</div>
+    </div></div>`;
+}};
+
+S.facetrigger = {tab:false, render(){
+  setStatus(false);
+  return `<div class="screen no-tab">
+    ${head('人脸识别触发方式')}
+    <div style="padding:6px 16px">
+      <div class="card"><div class="pills"><div class="pill on" onclick="toast('已设为自动触发')">自动</div><div class="pill" onclick="toast('已设为手动触发')">手动</div></div></div>
+      <p style="font-size:12.5px;color:var(--muted);padding:12px 8px;line-height:1.8">自动：有人靠近时自动识别人脸；<br>手动：需触摸键盘唤醒人脸识别。</p>
+    </div></div>`;
+}};
+S.radar = {tab:false, render(){
+  setStatus(false);
+  return `<div class="screen no-tab">
+    ${head('雷达监测')}
+    <div style="padding:6px 16px">
+      <div class="card">
+        <div class="label">监测距离</div><div class="pills"><div class="pill">近</div><div class="pill on">中</div><div class="pill">远</div></div>
+        <div class="label">监测间隔</div><div class="pills"><div class="pill">短</div><div class="pill on">中</div><div class="pill">长</div></div>
+        <div class="label">徘徊状态重置间隔</div><div class="pills"><div class="pill">短</div><div class="pill">中</div><div class="pill on">长</div></div>
+      </div>
+    </div></div>`;
+}};
+S.scene = {tab:false, render(){
+  setStatus(false);
+  return `<div class="screen no-tab">
+    ${head('情景模式')}
+    <div style="padding:6px 16px">
+      <div class="card"><div class="pills" style="flex-wrap:wrap">
+        <div class="pill">省电 120s</div><div class="pill on">普通 60s</div><div class="pill">实时 10s</div><div class="pill">自定义</div>
+      </div></div>
+      <p style="font-size:12.5px;color:var(--muted);padding:12px 8px;line-height:1.8">用于设置猫眼徘徊抓拍模式；自定义模式下可调整抓拍间隔。</p>
+    </div></div>`;
+}};
+
+S.base = {tab:false, render(){
+  setStatus(false);
+  return `<div class="screen no-tab">
+    ${head('基础设置')}
+    <div style="padding:6px 16px">
+      <div class="card">${toggleRow(I.eye,'rgba(38,0,59,.1)','猫眼电源','关闭后不能进入实时监控','cam')}</div>
+      <div class="card">${row(I.mic,'rgba(26,34,70,.08)','调节音量','高 · 中 · 低 · 静音',`<b style="font-size:13px;color:var(--navy)">中</b>`,"toast('音量：中')")}</div>
+      <div class="card">${toggleRow(I.card,'rgba(34,197,94,.12)','专属卡模式','仅必达 M1 防复制卡可用','m1')}</div>
+      <div class="card">${row(I.lock,'rgba(255,153,2,.14)','工作模式','自动上锁 / 手动上锁',`<b style="font-size:13px;color:var(--navy)">自动</b>`,"toast('开锁后自动上锁')")}</div>
+      <div class="card">${row(I.wifi,'rgba(42,53,99,.1)','猫眼 WiFi 设置','重新配置猫眼网络',null,"toast('已连接 2.4G WiFi：Bida_Home')")}</div>
+      <div class="card">${row(I.gear,'rgba(229,72,77,.1)','后面板按键功能','标准 / 自定义手势',`<b style="font-size:13px;color:var(--navy)">标准</b>`,"toast('后面板按键：标准模式')")}</div>
+    </div></div>`;
+}};
+
+/* ---------- 凭证管理 ---------- */
+S.pwdlist = {tab:false, render(){
+  setStatus(false);
+  const rows = state.pwdList.map((p,i)=>`
+    <div class="row">
+      <span class="r-ic" style="background:${p.type==='胁迫'?'rgba(229,72,77,.1)':'rgba(26,34,70,.08)'}">${I.pwd}</span>
+      <span class="r-tx"><span class="r-t">${p.n}</span><div class="r-s"><span class="badge ${p.type==='胁迫'?'red':'gray'}">${p.type}</span> ${p.t}</div></span>
+      <span class="r-v" style="font-family:monospace;letter-spacing:2px">${p.val}</span>
+    </div>`).join('');
+  return `<div class="screen no-tab">
+    ${head('密码设置', `<span style="color:var(--navy);font-weight:700" onclick="toast('随机密码：8 4 2 1 6 7（演示）')">随机密码</span>`)}
+    <div style="padding:6px 16px">
+      <div class="card">${rows}</div>
+      <button class="btn btn-primary block" style="margin-top:18px" onclick="openAddPwd()">＋ 添加开锁密码</button>
+    </div></div>`;
+}};
+function openAddPwd(){
+  openSheet(`<span class="close-x" onclick="closeSheet()">✕</span><h3>添加开锁密码</h3>
+    <div class="pills" style="margin-top:16px">
+      <div class="pill on" id="apt1" onclick="pwdType(1)">开锁密码</div><div class="pill" id="apt2" onclick="pwdType(2)">访客密码</div><div class="pill" id="apt3" onclick="pwdType(3)">胁迫密码</div>
+    </div>
+    <div id="aptime" style="display:none">
+      <div class="label">开始时间</div><input class="input" value="2025-10-21 08:00">
+      <div class="label">结束时间</div><input class="input" value="2025-10-25 20:00">
+    </div>
+    <div id="apcontact" style="display:none">
+      <div class="label">紧急联系人（胁迫密码）</div><input class="input" value="妈妈 138****2211">
+      <p style="font-size:11.5px;color:var(--muted);margin-top:6px">使用胁迫密码开锁时，紧急联系人会收到消息推送 / 短信 / 语音通知。</p>
+    </div>
+    <div class="label">密码名称</div><input class="input" value="新开锁密码">
+    <div class="label">开锁密码</div><input class="input" value="112233" style="font-family:monospace;letter-spacing:3px">
+    <button class="btn btn-primary block" style="margin-top:20px" onclick="toast('密码已添加（需在门锁 2 米内同步）');closeSheet()">保存</button>`);
+}
+function pwdType(m){
+  ['apt1','apt2','apt3'].forEach((id,i)=>$('#'+id).classList.toggle('on', m===i+1));
+  $('#aptime').style.display = m===2 ? 'block':'none';
+  $('#apcontact').style.display = m===3 ? 'block':'none';
+}
+S.facelist = {tab:false, render(){
+  setStatus(false);
+  const rows = state.faceList.map(p=>`
+    <div class="row"><span class="avatar" style="width:40px;height:40px;font-size:15px">${p.n[0]}</span>
+    <span class="r-tx"><span class="r-t">${p.n}</span><div class="r-s">${p.role}</div></span>
+    <span class="chev">${I.chev}</span></div>`).join('');
+  return `<div class="screen no-tab">
+    ${head('人脸管理')}
+    <div style="padding:6px 16px"><div class="card">${rows}</div>
+    <button class="btn btn-primary block" style="margin-top:18px" onclick="toast('靠近门锁，开始录入人脸…')">＋ 创建人脸</button></div></div>`;
+}};
+S.palmlist = {tab:false, render(){
+  setStatus(false);
+  const rows = state.palmList.map(p=>`
+    <div class="row"><span class="avatar" style="width:40px;height:40px;font-size:15px">${p.n[0]}</span>
+    <span class="r-tx"><span class="r-t">${p.n}</span><div class="r-s">${p.role} · 掌纹</div></span>
+    <span class="chev">${I.chev}</span></div>`).join('');
+  return `<div class="screen no-tab">
+    ${head('掌纹管理')}
+    <div style="padding:6px 16px"><div class="card">${rows}</div>
+    <button class="btn btn-primary block" style="margin-top:18px" onclick="toast('靠近门锁，开始录入掌纹…')">＋ 创建掌纹</button></div></div>`;
+}};
+S.cardlist = {tab:false, render(){
+  setStatus(false);
+  const rows = state.cardList.map(p=>`
+    <div class="row"><span class="avatar" style="width:40px;height:40px;font-size:15px">${p.n[0]}</span>
+    <span class="r-tx"><span class="r-t">${p.n}</span><div class="r-s">${p.type}</div></span>
+    <span class="chev">${I.chev}</span></div>`).join('');
+  return `<div class="screen no-tab">
+    ${head('门卡管理')}
+    <div style="padding:6px 16px"><div class="card">${rows}</div>
+    <button class="btn btn-primary block" style="margin-top:18px" onclick="toast('请将 M1 门卡靠近门锁刷卡录入…')">＋ 创建开门卡</button></div></div>`;
+}};
+/* ---------- 分享钥匙 ---------- */
+S.sharekey = {tab:false, render(){
+  setStatus(true);
+  return `<div class="screen no-tab" style="background:var(--bg)">
+    <div class="share-hero">
+      <span class="back" style="position:absolute;left:16px;top:54px;color:#fff" onclick="back()">${I.chevb}</span>
+      <div style="font-size:17px;font-weight:800;position:relative;z-index:2">分享钥匙</div>
+      <div class="av-pair" style="margin-top:34px">
+        <span class="av-big">S</span>
+        <span class="av-mid"><span>分享给</span><span class="av-line"></span></span>
+        <span class="av-big" style="background:linear-gradient(135deg,#2A3563,#26003B)">K</span>
+      </div>
+      <div style="margin-top:14px;font-size:15px;position:relative;z-index:2"><b>${esc(ME.name)}</b> → <b>KC</b></div>
+    </div>
+    <div class="key-card">
+      <div style="font-size:13px;color:var(--muted);font-weight:600">选择钥匙类型</div>
+      <div class="key-type">
+        <div class="kt on" id="kt1" onclick="keyType(1)">永久钥匙</div>
+        <div class="kt" id="kt2" onclick="keyType(2)">临时钥匙</div>
+        <div class="kt" id="kt3" onclick="keyType(3)">一次性钥匙</div>
+      </div>
+      <div id="share-time">
+        <div style="font-size:12.5px;color:var(--muted);margin-top:6px">有效时间</div>
+        <div class="time-row"><span>开始</span><span class="tv">2025-10-16 23:01:00</span></div>
+        <div class="time-row" style="margin-top:8px"><span>结束</span><span class="tv">2025-10-17 02:01:00</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:16px"><span class="switch on" onclick="this.classList.toggle('on')"></span><span style="font-size:13px;color:var(--muted)">分享对象可再次分享</span></div>
+      <button class="btn btn-orange block" style="margin-top:20px" onclick="shareKey()">立即分享</button>
+    </div>
+    <div style="padding:20px;font-size:12px;color:var(--muted2);text-align:center">分享后对方在“我的领取”中可查看并使用该钥匙开锁</div>
+  </div>`;
+}};
+function keyType(m){
+  ['kt1','kt2','kt3'].forEach((id,i)=>$('#'+id).classList.toggle('on', m===i+1));
+  $('#share-time').style.display = m===1 ? 'none':'block';
+}
+function shareKey(){
+  toast('已分享给 KC · 临时钥匙 3 小时有效');
+  state.keys.push({n:'分享给 KC', to:'KC', type:'临时', t:'10-17 02:01 到期'});
+  setTimeout(()=>go('home'), 900);
+}
+
+/* ---------- 实时猫眼 ---------- */
+S.cateye = {tab:false, render(){
+  setStatus(true);
+  return `<div class="screen no-tab" style="padding-bottom:0">
+    <div class="cam-wrap">
+      <div class="cam-noise"></div>
+      <div style="position:absolute;inset:0;background:radial-gradient(120% 90% at 30% 20%,rgba(255,255,255,.25),transparent 50%),linear-gradient(180deg,rgba(90,120,150,.25),transparent)"></div>
+      <div class="cam-top">
+        <span class="cam-rec"><span class="red"></span> LIVE</span>
+        <span class="cam-batt">🔋 70%</span>
+      </div>
+      <div style="position:absolute;top:118px;left:20px;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.4)">
+        <div style="font-size:22px;font-weight:800">门外 · 走廊</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.85);margin-top:6px">2025/10/20 11:11:11</div>
+      </div>
+      <div style="position:absolute;right:20px;bottom:calc(var(--tab-h) + 130px);color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.4);font-size:12px;text-align:right;line-height:1.9">
+        <div>雷达监测：正常</div><div>有人徘徊：未检测</div>
+      </div>
+      <div class="cam-cta">
+        <div class="cam-btn" onclick="toast('已开启语音对讲')">${I.mic}<span>对讲</span></div>
+        <div class="cam-btn" onclick="toast('已开启变声（大叔音）')">${I.flash}<span>变声</span></div>
+        <div class="cam-btn" onclick="toast('抓拍成功，已存入云储存')">${I.cam}<span>抓拍</span></div>
+        <div class="cam-btn unlock" id="cam-unlock" onclick="unlockDoor(this)">${I.lock}<span>开锁</span></div>
+        <div class="cam-btn off" onclick="toast('已断开连接');go('home')">${I.link}<span>断开</span></div>
+      </div>
+    </div>
+  </div>`;
+}};
+function unlockDoor(el){
+  el.classList.add('unlocking');
+  toast('开锁成功，欢迎回家');
+  setTimeout(()=>el.classList.remove('unlocking'), 2200);
+}
+
+/* ---------- 云储存 / 云录像 ---------- */
+S.cloudstore = {tab:false, render(){
+  setStatus(false);
+  return `<div class="screen no-tab">
+    ${head('云储存')}
+    <div style="padding:6px 16px">
+      <div class="card" style="background:linear-gradient(135deg,#1A2246,#26003B);color:#fff;display:flex;justify-content:space-between;align-items:center;position:relative;overflow:hidden">
+        <div><div style="font-size:12px;color:rgba(255,255,255,.6)">当前套餐</div><div style="font-size:22px;font-weight:800;margin-top:4px">年套餐</div><div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:4px">剩余 203 天 · 2026-03-05 到期</div></div>
+        <div style="font-size:34px">☁️</div>
+      </div>
+      <div style="display:grid;gap:12px;margin-top:14px">
+        ${['7 天循环','30 天循环','年套餐（推荐）'].map((n,i)=>`
+        <div class="pk ${i===2?'on':''}" onclick="this.parentNode.querySelectorAll('.pk').forEach(p=>p.classList.remove('on'));this.classList.add('on')">
+          <div class="pk-n">${n}</div><div class="pk-p">${['¥18/月','¥48/月','¥268/年'][i]}</div><div class="pk-s">${['近 7 天抓拍与录像','近 30 天 · 云端加密','每年 · 送 200 天 + 事件优先推送'][i]}</div>
+        </div>`).join('')}
+      </div>
+      <button class="btn btn-orange block" style="margin-top:18px" onclick="toast('已生成订单，演示模式不发起支付')">立即开通</button>
+    </div></div>`;
+}};
+S.cloudvideo = {tab:false, render(){
+  setStatus(false);
+  const rows = state.vids.map((v,i)=>`
+    <div class="row"><span style="width:64px;height:64px;border-radius:14px;background:linear-gradient(160deg,#D6DEE8,#A9BBCE);display:flex;align-items:center;justify-content:center;color:#4A5A6E;flex:none">${v.v?I.video:'<span style="font-size:10px;font-weight:700">'+v.e.slice(0,2)+'</span>'}</span>
+    <span class="r-tx"><span class="r-t" style="font-size:14px">${v.e}</span><div class="r-s">${v.t} · ${v.d}</div></span>
+    <span class="r-v" style="color:var(--navy);font-weight:600" onclick="toast('正在播放录像（演示）')">播放</span></div>`).join('');
+  return `<div class="screen no-tab">
+    ${head('云录像')}
+    <div style="padding:6px 16px"><div class="card">${rows}</div></div></div>`;
+}};
+
+/* ---------- 事件记录 ---------- */
+S.events = {tab:false, render(){
+  setStatus(false);
+  const rows = state.events.map(e=>`
+    <div class="row" style="align-items:flex-start">
+      <span class="r-ic" style="background:${e.s==='warn'?'rgba(229,72,77,.1)':'rgba(26,34,70,.07)'};width:36px;height:36px;border-radius:12px">${e.s==='warn'?I.bell:I.doc}</span>
+      <span class="r-tx"><span class="r-t" style="font-size:14px">${e.e}</span><div class="r-s">${e.t} · ${e.u}</div></span>
+    </div>`).join('');
+  return `<div class="screen no-tab">
+    ${head('事件记录')}
+    <div style="padding:6px 16px">
+      <div class="pills"><div class="pill on">云端记录</div><div class="pill" onclick="toast('需打开蓝牙并在门锁 2 米内查看本地记录')">门锁本地记录</div></div>
+      <div class="card" style="margin-top:14px">${rows}</div>
+    </div></div>`;
+}};
+
+/* ---------- 用户管理 ---------- */
+S.users = {tab:false, render(){
+  setStatus(false);
+  return `<div class="screen no-tab">
+    ${head('用户管理')}
+    <div style="padding:6px 16px">
+      <div class="card">
+        ${row(I.users,'rgba(26,34,70,.08)','子管理员',`<span class="badge navy">2</span> 小美 · 阿强`,null,"go('admins')")}
+        ${row(I.face,'rgba(255,153,2,.14)','普通用户',`<span class="badge navy">1</span> 访客-李`,null,"go('commonusers')")}
+        ${row(I.home,'rgba(34,197,94,.12)','家庭成员',`<span class="badge navy">4</span> 妈妈 · 爸爸 · 女儿`,null,"go('familymem')")}
+      </div>
+    </div></div>`;
+}};
+S.admins = {tab:false, render(){
+  setStatus(false);
+  const rows = state.users.admins.map(a=>`
+    <div class="row"><span class="avatar" style="width:40px;height:40px;font-size:15px">${a.n[0]}</span>
+    <span class="r-tx"><span class="r-t">${a.n}</span><div class="r-s">${a.phone} · ${a.p} 项权限</div></span>
+    <span class="r-v" style="color:var(--navy);font-weight:600" onclick="toast('编辑 ${a.n} 的权限')">编辑</span></div>`).join('');
+  return `<div class="screen no-tab">
+    ${head('子管理员', `<span style="color:var(--navy);font-weight:700" onclick="toast('添加子管理员：名称 + 手机号 + 自定义权限')">＋ 添加</span>`)}
+    <div style="padding:6px 16px"><div class="card">${rows}</div>
+    <p style="font-size:11.5px;color:var(--muted2);padding:12px 8px;line-height:1.7">删除子管理员不会同步删除其添加的手机钥匙、密码、门卡和指纹权限。</p></div></div>`;
+}};
+S.commonusers = {tab:false, render(){
+  setStatus(false);
+  const rows = state.users.users.map(a=>`
+    <div class="row"><span class="avatar" style="width:40px;height:40px;font-size:15px">${a.n[0]}</span>
+    <span class="r-tx"><span class="r-t">${a.n}</span><div class="r-s">${a.phone}</div></span>
+    <span class="chev">${I.chev}</span></div>`).join('');
+  return `<div class="screen no-tab">
+    ${head('普通用户', `<span style="color:var(--navy);font-weight:700" onclick="toast('添加普通用户：名称 + 手机号')">＋ 添加</span>`)}
+    <div style="padding:6px 16px"><div class="card">${rows}</div>
+    <p style="font-size:11.5px;color:var(--muted2);padding:12px 8px;line-height:1.7">普通用户每种权限最多只能添加一组。</p></div></div>`;
+}};
+S.familymem = {tab:false, render(){
+  setStatus(false);
+  const rows = state.users.fams.map(a=>`
+    <div class="row"><span class="avatar" style="width:40px;height:40px;font-size:15px">${a.n[0]}</span>
+    <span class="r-tx"><span class="r-t">${a.n}</span><div class="r-s">家庭成员 · ${a.p}权限</div></span>
+    <span class="r-v" style="color:var(--navy);font-weight:600" onclick="toast('修改 ${a.n} 的权限')">修改权限</span></div>`).join('');
+  return `<div class="screen no-tab">
+    ${head('家庭成员')}
+    <div style="padding:6px 16px"><div class="card">${rows}</div></div></div>`;
+}};
+
+/* ---------- 消息中心 ---------- */
+S.messages = {tab:false, render(){
+  setStatus(false);
+  const cats = [['urgent','紧急通知'],['sys','系统消息'],['open','开锁通知']];
+  const tabs = cats.map((c,i)=>`<div class="pill ${i===0?'on':''}" id="msgt${i}" onclick="msgTab(${i})">${c[1]}</div>`).join('');
+  const lists = cats.map((c,i)=>`<div class="msg-list" id="msgl${i}" style="${i===0?'':'display:none'}">${
+    state.msgs[c[0]].map(m=>`<div class="row"><span class="r-ic" style="background:${c[0]==='urgent'?'rgba(229,72,77,.1)':'rgba(26,34,70,.07)'}">${c[0]==='urgent'?I.bell:I.msg}</span>
+    <span class="r-tx"><span class="r-t" style="font-size:14.5px">${m.t}</span><div class="r-s">${m.s} · ${m.d}</div></span></div>`).join('')
+  }</div>`).join('');
+  return `<div class="screen no-tab">
+    ${head('消息中心')}
+    <div style="padding:6px 16px">
+      <div class="pills">${tabs}</div>
+      <div class="card" style="margin-top:14px">${lists}</div>
+    </div></div>`;
+}};
+function msgTab(i){
+  [0,1,2].forEach(k=>{ $('#msgt'+k).classList.toggle('on', k===i); $('#msgl'+k).style.display = k===i?'block':'none'; });
+}
+
+/* ---------- 添加设备 ---------- */
+S.addlock = {tab:false, render(){
+  setStatus(true);
+  return `<div class="screen no-tab" style="background:var(--bg)">
+    ${head('添加门锁')}
+    <div style="padding:10px 16px">
+      <div class="card" style="text-align:center;padding:26px">
+        <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#1A2246,#26003B);color:#fff;display:flex;align-items:center;justify-content:center;margin:0 auto">${I.lock}</div>
+        <div style="font-size:16px;font-weight:800;margin-top:16px">请触摸唤醒门锁</div>
+        <div style="font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.7">按门锁前板唤醒键，并确保已开启蓝牙广播（*+7+1+#）</div>
+      </div>
+      <button class="btn btn-primary block" style="margin-top:16px" onclick="scanLock(this)">开始蓝牙扫描</button>
+      <div id="scan-result" style="display:none;margin-top:16px">
+        <div class="card" onclick="go('addlock2')">
+          ${row(I.lock,'rgba(34,197,94,.12)','背壳锁 F3 Pro','BD-5F37 · 蓝牙信号强','<span class="badge" style="background:rgba(34,197,94,.12);color:var(--green)">可添加</span>',"go('addlock2')")}
+          <div style="font-size:12px;color:var(--muted);padding:6px 4px">已发现 1 台附近设备 · 支持二维码添加离线版</div>
+        </div>
+      </div>
+    </div></div>`;
+}};
+function scanLock(btn){
+  btn.textContent = '正在扫描附近设备…'; btn.style.opacity = .6;
+  setTimeout(()=>{ btn.style.display='none'; $('#scan-result').style.display='block'; toast('发现门锁：背壳锁 F3 Pro'); }, 1600);
+}
+S.addlock2 = {tab:false, render(){
+  setStatus(true);
+  return `<div class="screen no-tab" style="background:var(--bg)">
+    ${head('设备激活')}
+    <div style="padding:10px 16px">
+      <div class="card" style="text-align:center;padding:30px">
+        <div style="font-size:44px">🔓</div>
+        <div style="font-size:17px;font-weight:800;margin-top:10px">激活成功</div>
+        <div style="font-size:12.5px;color:var(--muted);margin-top:6px">已与门锁建立安全连接，正在同步配置…</div>
+        <div style="height:8px;border-radius:4px;background:#F0F1F4;margin-top:20px;overflow:hidden"><div style="width:100%;height:100%;border-radius:4px;background:linear-gradient(90deg,var(--navy),var(--orange))"></div></div>
+        <div style="font-size:12px;color:var(--muted);margin-top:10px">进度 100%</div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <div class="label">选择房间</div>
+        <div class="pills"><div class="pill on">主卧</div><div class="pill">客厅</div><div class="pill">书房</div><div class="pill">门厅</div></div>
+        <div class="label">设备名称</div><input class="input" value="背壳锁 F3 Pro">
+      </div>
+      <button class="btn btn-primary block" style="margin-top:16px" onclick="toast('设备添加完成，您已成为主管理员');go('home')">完成</button>
+    </div></div>`;
+}};
+
+/* ---------- 猫眼管理 ---------- */
+S.catmgr = {tab:false, render(){
+  setStatus(false);
+  return `<div class="screen no-tab">
+    ${head('猫眼管理')}
+    <div style="padding:6px 16px">
+      <div class="card">
+        ${toggleRow(I.eye,'rgba(38,0,59,.1)','猫眼设备','使用开关 · 远程唤醒','camon')}
+        ${row(I.eye,'rgba(26,34,70,.08)','实时监控','门外画面 · 语音对讲 · 变声',null,"go('cateye')")}
+        ${row(I.cloud,'rgba(42,53,99,.1)','我的云存储','套餐与剩余天数',`<b style="font-size:13px;color:var(--navy)">203天</b>`,"go('cloudstore')")}
+        ${row(I.msg,'rgba(255,153,2,.14)','消息推送','长期逗留 · 按门铃推送',null,"toast('推送已开启')")}
+        ${row(I.video,'rgba(229,72,77,.1)','固件版本','猫眼固件 v2.1.3',null,"toast('已是最新版本')")}
+      </div>
+    </div></div>`;
+}};
+/* ---------- 我的钥匙 ---------- */
+S.keys = {tab:false, render(){
+  setStatus(false);
+  const rows = state.keys.map(k=>`
+    <div class="row">
+      <span style="width:44px;height:44px;border-radius:14px;background:${k.type==='永久'?'rgba(26,34,70,.08)':k.type==='临时'?'rgba(255,153,2,.14)':'rgba(34,197,94,.12)'};display:flex;align-items:center;justify-content:center;color:var(--navy)">${I.key}</span>
+      <span class="r-tx"><span class="r-t" style="font-size:15px">${k.n}</span><div class="r-s"><span class="badge ${k.type==='永久'?'navy':k.type==='临时'?'orange':'gray'}">${k.type}</span> ${k.t||''}</div></span>
+      <span class="r-v" style="color:var(--navy);font-weight:600" onclick="toast('正在使用手机钥匙开锁…');unlockDemo()">开锁</span>
+    </div>`).join('');
+  return `<div class="screen no-tab">
+    ${head('我的钥匙', `<span style="color:var(--navy);font-weight:700" onclick="go('sharekey')">分享</span>`)}
+    <div style="padding:6px 16px">
+      <div class="card">${rows}</div>
+      <p style="font-size:12px;color:var(--muted2);padding:12px 8px;line-height:1.7">开锁需打开手机蓝牙与定位，并距离门锁 2 米范围内。</p>
+    </div></div>`;
+}};
+function unlockDemo(){ setTimeout(()=>toast('开锁成功'), 1200); }
+
+/* ---------- 家庭管理 ---------- */
+S.family = {tab:false, render(){
+  setStatus(false);
+  return `<div class="screen no-tab">
+    ${head('家庭管理', `<span style="color:var(--navy);font-weight:700" onclick="toast('新建家庭：输入家庭名称 + 地址')">＋ 新建</span>`)}
+    <div style="padding:6px 16px">
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:14px">
+          <span style="width:50px;height:50px;border-radius:16px;background:linear-gradient(135deg,#1A2246,#26003B);color:#fff;display:flex;align-items:center;justify-content:center">${I.home}</span>
+          <div style="flex:1"><div style="font-size:16.5px;font-weight:800">新塘智慧园</div><div style="font-size:12px;color:var(--muted);margin-top:3px">3 个房间 · 5 位成员 · 1 台设备</div></div>
+          <span class="badge navy">当前</span>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:16px">
+          <div class="btn btn-ghost" style="padding:10px 0;font-size:13px" onclick="toast('已切换家庭（演示）')">管理家庭</div>
+          <div class="btn btn-primary" style="padding:10px 0;font-size:13px" onclick="toast('添加家人：输入手机号')">添加家人</div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        ${row(I.home,'rgba(26,34,70,.08)','房间管理','主卧 · 客厅 · 书房 · 门厅',null,"toast('房间管理（演示）')")}
+      </div>
+    </div></div>`;
+}};
+
+/* ---------- 商城 ---------- */
+S.mall = {tab:true, render(){
+  setStatus(true);
+  const prods = [
+    {n:'必达F3 Pro 3D人脸识别智能锁', now:'¥2,299', old:'¥2,699'},
+    {n:'必达 F3 Pro 3D人脸识别智能锁', now:'¥2,299', old:'¥2,699'},
+    {n:'必达 智能猫眼可视门铃', now:'¥699', old:'¥899'},
+    {n:'必达 M1 防复制门卡', now:'¥39', old:'¥59'}
+  ];
+  return `<div class="screen" style="padding-bottom:calc(var(--tab-h) + 24px)">
+    <div class="mall-hero">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font-size:15px;font-weight:800;letter-spacing:1px">LOCK 01</div>
+        <div style="display:flex;gap:16px;margin-top:10px;font-size:12px;color:rgba(255,255,255,.5)"><span style="color:#fff;font-weight:700">双11</span><span>用锁</span><span>智能</span><span>周边</span><span>权益</span></div></div>
+        <span style="color:var(--orange)">${I.cart}</span>
+      </div>
+      <div class="mall-tabs"><span class="on">推荐</span><span>新品</span><span>门锁</span><span>配件</span></div>
+    </div>
+    <div class="mall-banner">
+      <div class="mb-k">BIG SALE · 11.11</div>
+      <div class="mb-t">解"锁"双11</div>
+      <div class="mb-s">新品首发 · 最高立省 ¥400</div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px 0">
+      <span style="font-size:16px;font-weight:800">新品推荐</span><span style="font-size:12px;color:var(--muted)">更多 →</span>
+    </div>
+    <div class="prod-grid">
+      ${prods.map(p=>`<div class="prod" onclick="toast('商品详情（演示）')">
+        <div class="p-img">${I.lock}</div>
+        <div class="p-bd"><div class="p-t">${p.n}</div><div class="p-p"><span class="p-now">${p.now}</span><span class="p-old">${p.old}</span></div></div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}};
+
+/* ---------- BK life 风格探索 ---------- */
+S.bklife = {tab:true, render(){
+  setStatus(true);
+  return `<div class="screen" style="padding-bottom:0">
+    <div class="bl-hero">
+      <div style="position:absolute;inset:0;background:
+        linear-gradient(115deg, rgba(0,0,0,.18) 0 18%, transparent 18% 38%, rgba(255,255,255,.06) 38% 42%, transparent 42%),
+        linear-gradient(200deg, #3A332C 0%, #574A41 40%, #8E7CC3 40% 46%, #D9A441 46% 52%, #2E6E5E 52% 60%, #1F2430 60%);
+        mix-blend-mode:normal;"></div>
+      <div class="bl-title">滑动指尖<br>探索新风格</div>
+      <div class="bl-sub">门面即门面 · 让家门成为艺术品</div>
+      <div class="bl-btns">
+        <div class="bb solid" onclick="toast('开始探索（演示）')">探索</div>
+        <div class="bb" onclick="toast('已保存至我的搭配方案')">保存至搭配方案</div>
+      </div>
+      <div class="bl-footer">
+        <div class="bl-swatch">
+          <span class="sw" style="background:#8E7CC3"></span>
+          <span class="sw" style="background:#D9A441"></span>
+          <span class="sw" style="background:#2E6E5E"></span>
+          <span class="sw" style="background:#1F2430"></span>
+        </div>
+        <div style="display:flex;gap:20px;font-size:13px;font-weight:600"><span>我的</span><span>门案</span><span class="on" style="color:#fff;border-bottom:2px solid var(--orange);padding-bottom:2px">自动</span><span>方案</span></div>
+      </div>
+    </div>
+  </div>`;
+}};
+
+/* ---------- 发现 / 社区 ---------- */
+S.discover = {tab:true, render(){
+  setStatus(false);
+  return `<div class="screen">
+    <div class="disc-head">
+      <span class="on">推荐</span><span onclick="toast('关注（演示）')">关注</span><span onclick="toast('同城（演示）')">深圳</span>
+      <span class="more">more</span>
+    </div>
+    <div class="tag-scroll">
+      <span class="tag on"># 热门活动</span><span class="tag">#开锁日记</span><span class="tag">#解锁新肤</span><span class="tag">#锁住你</span><span class="tag">#门面改造</span>
+    </div>
+    <div class="post">
+      <div class="p-top"><span class="avatar" style="width:40px;height:40px;font-size:15px">K</span>
+        <div><div class="p-name">KUNKUN</div><div class="p-time">家居博主 · 深圳</div></div>
+        <span class="p-follow" onclick="this.textContent='已关注'">+ 关注</span></div>
+      <div class="p-img2" style="background:linear-gradient(135deg,#E8E3F5,#B9A8E0 55%,#8E7CC3)"></div>
+      <div class="p-tx">新家换上了必达 F3 Pro，3D 人脸 + 掌纹双识别，指纹都不用碰。开门那一下，科技感拉满！</div>
+      <div class="p-meta"><span>❤ 2315</span><span>💬 15</span><span>↗ 15</span></div>
+    </div>
+    <div class="post">
+      <div class="p-top"><span class="avatar" style="width:40px;height:40px;font-size:15px;background:linear-gradient(135deg,#D9A441,#8E7CC3)">M</span>
+        <div><div class="p-name">MONDRIAN</div><div class="p-time">设计工作室 · 上海</div></div>
+        <span class="p-follow" style="background:#fff;color:var(--navy);border:1px solid var(--line)" onclick="this.textContent='已关注'">+ 关注</span></div>
+      <div class="p-img2" style="background:linear-gradient(135deg,#E35D2C 0 20%,#F6F5F7 20% 36%,#1F2430 36% 60%,#D9A441 60% 80%,#8E7CC3 80%)"></div>
+      <div class="p-tx">将传奇色彩融入家居风格，感受荷兰风格派运动蒙德里安画作的艺术感。</div>
+      <div class="p-meta"><span>❤ 328</span><span>💬 12</span><span>↗ 8</span></div>
+    </div>
+    <div style="height:30px"></div>
+  </div>`;
+}};
+/* ---------- 我的 ---------- */
+S.profile = {tab:true, render(){
+  setStatus(false);
+  return `<div class="screen">
+    <div class="prof-head">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <span style="font-size:18px;font-weight:800;color:var(--navy)">我的</span>
+        <span style="color:var(--muted)" onclick="go('login')">退出</span>
+      </div>
+      <div class="prof-card">
+        <span class="prof-av">S</span>
+        <div style="flex:1"><div class="prof-nm">${esc(ME.name)}</div><div style="font-size:13px;color:var(--muted);margin-top:3px">${esc(ME.phone)}</div></div>
+        <span class="badge orange">主管理员</span>
+      </div>
+    </div>
+    <div class="member-card">
+      <div><div class="mc-num">103 <span style="font-size:12px">天</span></div><div class="mc-lbl">会员剩余 · 智能锁</div></div>
+      <div><div class="mc-num">86 <span style="font-size:12px">天</span></div><div class="mc-lbl">格子皮革贝壳 · 会员</div></div>
+      <span class="mc-tag"><span class="badge outline" onclick="toast('会员中心（演示）')">升级</span></span>
+    </div>
+    <div style="padding:16px">
+      <div class="card">
+        ${row(I.doc,'rgba(42,53,99,.1)','操作指南','背壳锁 BK APP 操作手册',null,"toast('打开操作手册（演示）')")}
+      </div>
+      <div style="margin-top:18px">
+        <div class="sect-title">充值中心</div>
+        <div class="rg-grid" style="padding:0">
+          ${[['mic','语音充值','远程语音通知 · 按条计费'],['msg','短信充值','短信通知 · 紧急事件'],['card','存储卡密','激活码兑换存储套餐'],['cloud','存储充值','云存储套餐续费']].map((g,i)=>`
+          <div class="rg" onclick="go('recharge${i+1}')">
+            <span class="rg-ic" style="background:${['rgba(255,153,2,.14)','rgba(34,197,94,.12)','rgba(38,0,59,.1)','rgba(26,34,70,.08)'][i]}">${I[g[0]]}</span>
+            <div class="rg-t">${g[1]}</div><div class="rg-s">${g[2]}</div>
+          </div>`).join('')}
+        </div>
+      </div>
+      <div class="card" style="margin-top:18px">
+        ${row(I.home,'rgba(26,34,70,.08)','家庭管理','新塘智慧园 · 5 位成员',null,"go('family')")}
+        ${row(I.key,'rgba(255,153,2,.14)','我的钥匙','3 把',null,"go('keys')")}
+        ${row(I.msg,'rgba(34,197,94,.12)','消息推送','接收推送通知',`<span class="switch on" onclick="this.classList.toggle('on')"></span>`,"")}
+        ${row(I.broom,'rgba(42,53,99,.1)','清理缓存','<span style="font-size:12px">0.00 MB</span>',null,"toast('缓存已清理')")}
+        ${row(I.shield,'rgba(38,0,59,.1)','第三方信息','个人信息共享清单',null,"toast('查看第三方个人信息共享清单（演示）')")}
+        ${row(I.doc,'rgba(229,72,77,.1)','关于我们','v3.2.0.4',null,"toast('背壳锁 BK life v3.2.0.4')")}
+      </div>
+    </div>
+  </div>`;
+}};
+
+/* ---------- 充值中心子页 ---------- */
+S.recharge1 = {tab:false, render(){
+  setStatus(false);
+  return `<div class="screen no-tab">
+    ${head('语音充值')}
+    <div style="padding:6px 16px">
+      <div class="card"><div class="pills"><div class="pill on">10 条</div><div class="pill">30 条</div><div class="pill">100 条</div></div></div>
+      <div style="text-align:center;margin:24px 0"><div style="font-size:38px;font-weight:800;color:var(--orange)">¥6.00</div><div style="font-size:12px;color:var(--muted);margin-top:6px">用于胁迫开锁 / 紧急事件的语音通知</div></div>
+      <button class="btn btn-orange block" onclick="toast('订单已生成（演示）')">立即充值</button>
+    </div></div>`;
+}};
+S.recharge2 = {tab:false, render(){
+  setStatus(false);
+  return `<div class="screen no-tab">
+    ${head('短信充值')}
+    <div style="padding:6px 16px">
+      <div class="card"><div class="pills"><div class="pill on">20 条</div><div class="pill">100 条</div><div class="pill">500 条</div></div></div>
+      <div style="text-align:center;margin:24px 0"><div style="font-size:38px;font-weight:800;color:var(--orange)">¥3.00</div><div style="font-size:12px;color:var(--muted);margin-top:6px">开锁通知 / 报警短信推送</div></div>
+      <button class="btn btn-orange block" onclick="toast('订单已生成（演示）')">立即充值</button>
+    </div></div>`;
+}};
+S.recharge3 = {tab:false, render(){
+  setStatus(false);
+  return `<div class="screen no-tab">
+    ${head('存储卡密')}
+    <div style="padding:6px 16px">
+      <div class="card">
+        <div class="label">选择设备</div>
+        <div style="display:flex;align-items:center;gap:12px;background:#F6F5F7;border-radius:14px;padding:12px"><span style="color:var(--navy)">${I.lock}</span><span style="font-size:14px;font-weight:600">背壳锁 F3 Pro</span><span class="badge gray" style="margin-left:auto">已选</span></div>
+        <div class="label">激活码</div><input class="input" placeholder="输入存储套餐激活码" style="text-transform:uppercase">
+      </div>
+      <button class="btn btn-primary block" style="margin-top:18px" onclick="toast('激活码已兑换 · 云存储已开通')">领取存储套餐</button>
+    </div></div>`;
+}};
+S.recharge4 = {tab:false, render(){
+  setStatus(false);
+  return `<div class="screen no-tab">
+    ${head('存储充值')}
+    <div style="padding:6px 16px">
+      <div class="card" style="background:linear-gradient(135deg,#1A2246,#26003B);color:#fff">
+        <div style="font-size:12px;color:rgba(255,255,255,.6)">当前套餐</div>
+        <div style="font-size:24px;font-weight:800;margin-top:4px">年套餐 · 剩余 203 天</div>
+      </div>
+      <div style="display:grid;gap:12px;margin-top:14px">
+        ${['7 天循环','30 天循环','年套餐（推荐）'].map((n,i)=>`
+        <div class="pk ${i===2?'on':''}" onclick="this.parentNode.querySelectorAll('.pk').forEach(p=>p.classList.remove('on'));this.classList.add('on')">
+          <div class="pk-n">${n}</div><div class="pk-p">${['¥18/月','¥48/月','¥268/年'][i]}</div></div>`).join('')}
+      </div>
+      <button class="btn btn-orange block" style="margin-top:18px" onclick="toast('订单已生成（演示）')">确认充值</button>
+    </div></div>`;
+}};
+/* ================= router ================= */
+let navStack = ['home'];
+function go(id){
+  if(!S[id]) return;
+  if(S[id].tab){ navStack = [id]; } else { navStack.push(id); }
+  if(location.hash !== '#'+id){ location.hash = '#'+id; } else { render(); }
+}
+function back(){
+  if(navStack.length > 1){ navStack.pop(); location.hash = '#'+navStack[navStack.length-1]; }
+  else { go('home'); }
+}
+function render(){
+  let id = location.hash.slice(1) || 'home';
+  if(!S[id]){ id = 'home'; location.hash = '#'+id; }
+  if(navStack[navStack.length-1] !== id){ navStack.push(id); }
+  const s = S[id];
+  $('#screen').innerHTML = s.render();
+  $('#screen').scrollTop = 0;
+  showTab(!!s.tab);
+  document.querySelectorAll('#tabbar .tab').forEach(t=>t.classList.toggle('on', t.dataset.tab===id));
+  const center = document.querySelector('#tabbar .tab-center');
+  if(center){ center.style.opacity = id==='bklife' ? 1 : .9; }
+}
+window.addEventListener('hashchange', render);
+$('#modal').addEventListener('click', e=>{ if(e.target === $('#modal')) closeSheet(); });
+
+/* ================= init ================= */
+try { go('home'); }
+catch(err){
+  $('#screen').innerHTML = '<div style="padding:80px 30px;color:#E5484D;font-size:14px;line-height:1.9">页面初始化出错：' + esc(err.message) + '<br><br>请使用最新版 Chrome / Edge 打开。</div>';
+  showTab(false);
+}
+</script>
+</body>
+</html>
