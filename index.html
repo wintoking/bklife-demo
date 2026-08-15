@@ -1295,7 +1295,7 @@ function syncSkinShow(){
   const el = $('#skinShow'); if(!el) return;
   const skin = currentSkin();
   el.style.setProperty('--ss-accent', skin.accent);
-  const img = el.querySelector('.ss-img'); if(img) img.src = skin.frame;
+  const img = el.querySelector('.ss-img'); if(img){ img.src = skin.frame; img.alt = '背壳锁 产品实拍 · '+skin.name; }
   const cap = el.querySelector('.ss-cap'); if(cap){
     const dot = cap.querySelector('.dot'); if(dot) dot.style.background = skin.accent;
     const nm = cap.querySelector('.s-name'); if(nm) nm.textContent = skin.name+' · 背壳';
